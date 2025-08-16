@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Struk SPBU</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        #toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        #toolbar button, #toolbar select, #toolbar input[type="file"] {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
+        
+        #toolbar button:hover {
+            background-color: #e8e8e8;
+        }
+        
+        #toolbar button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #0069d9;
+        }
+        
+        #receipt {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            width: 250px;
+            min-height: 400px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: white;
+            margin: 0 auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            outline: none;
+            line-height: 1.4;
+        }
+        
+        .dashed-line {
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 5px 0;
+            height: 1px;
+            width: 100%;
+        }
+        
+        @media print {
+            #toolbar {
+                display: none;
+            }
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            #receipt {
+                box-shadow: none;
+                border: none;
+                padding: 5px;
+                width: auto;
+            }
+            .dashed-line {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-top: 1px dashed #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <div style="display: flex; gap: 5px;">
+            <button onclick="setTextAlign('left')" title="Rata kiri">Kiri</button>
+            <button onclick="setTextAlign('center')" title="Rata tengah">Tengah</button>
+            <button onclick="setTextAlign('right')" title="Rata kanan">Kanan</button>
+        </div>
+        
+        <div style="display: flex; gap: 5px;">
+            <button onclick="document.execCommand('bold', false, null)" title="Bold">B</button>
+            <button onclick="document.execCommand('underline', false, null)" title="Underline">U</button>
+            <button onclick="document.execCommand('foreColor', false, 'red')" title="Warna merah">Merah</button>
+            <button onclick="insertDashedLine()" title="Garis putus">Garis</button>
+        </div>
+        
+        <div style="display: flex; gap: 5px; align-items: center;">
+            <input type="file" id="logoUpload" accept="image/*" style="display: none;">
+            <button onclick="document.getElementById('logoUpload').click()" title="Upload logo">Logo</button>
+            <button onclick="setLogoPosition('left')" title="Logo kiri">◀</button>
+            <button onclick="setLogoPosition('center')" title="Logo tengah">●</button>
+            <button onclick="setLogoPosition('right')" title="Logo kanan">▶</button>
+            <input type="range" id="logoSize" min="30" max="150" value="80" title="Ukuran logo">
+            <button onclick="removeLogo()" title="Hapus logo">✖</button>
+        </div>
+        
+        <div style="display: flex; gap: 5px; align-items: center;">
+            <label for="paperSize">Ukuran:</label>
+            <select id="paperSize">
+                <option value="58">58mm</option>
+                <option value="80" selected>80mm</option>
+            </select>
+            <button onclick="printReceipt()" style="background-color: #28a745; color: white;" title="Cetak struk">Cetak</button>
+        </div>
+    </div>
+
+    <div id="receipt" contenteditable="true">
+        <div id="logoWrapper" style="text-align:center; margin-bottom:5px;"></div>
+
+34.40111
+JL. CIPAGANTI, PASTEUR
+SUKAJADI, BANDUNG
+<div class="dashed-line"></div>
+Shift : 2   No Trans : 273512
+Waktu : <span id="currentDate"></span>
+<div class="dashed-line"></div>
+Pulau/Pompa : 11
+Nama Produk : PERTAMAX
+Harga/Liter : Rp. 9,000
+Volume (L) : 27.77
+Total Harga : Rp. 250,000
+Operator : TITIN
+<div class="dashed-line"></div>
+CASH
+250,000
+<div class="dashed-line"></div>
+AYO PATUHI SM : MEMAKAI MASKER
+MENCUCI TANGAN MENJAGA JARAK
+MEMBATASI KERUMUNAN & MOBILITAS
+TERIMA KASIH
+    </div>
+
+    <script>
+        let currentLogo = null;
+        let logoAlign = "center";
+        
+        // Set tanggal otomatis
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const formattedDate = now.toLocaleDateString('id-ID', options).replace(/\./g, ':');
+            document.getElementById('currentDate').textContent = formattedDate;
+        }
+        
+        // tombol align text
+        function setTextAlign(pos) {
+            document.execCommand("justify" + pos.charAt(0).toUpperCase() + pos.slice(1));
+            
+            // Update active button state
+            document.querySelectorAll('#toolbar button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // garis putus-putus
+        function insertDashedLine() {
+            const dashedLine = document.createElement('div');
+            dashedLine.className = 'dashed-line';
+            document.execCommand('insertHTML', false, dashedLine.outerHTML);
+        }
+        
+        // upload logo
+        document.getElementById("logoUpload").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    if(!currentLogo) {
+                        currentLogo = document.createElement("img");
+                        currentLogo.style.maxWidth = "100%";
+                        currentLogo.style.height = "auto";
+                        document.getElementById("logoWrapper").appendChild(currentLogo);
+                    }
+                    currentLogo.src = evt.target.result;
+                    updateLogoSize();
+                    setLogoPosition(logoAlign);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // update ukuran logo
+        function updateLogoSize() {
+            if(currentLogo) {
+                currentLogo.style.width = document.getElementById("logoSize").value + "px";
+            }
+        }
+        
+        // slider ubah ukuran logo
+        document.getElementById("logoSize").addEventListener("input", function() {
+            updateLogoSize();
+        });
+        
+        // posisi logo
+        function setLogoPosition(pos) {
+            logoAlign = pos;
+            if(currentLogo) {
+                document.getElementById("logoWrapper").style.textAlign = pos;
+            }
+        }
+        
+        // hapus logo
+        function removeLogo() {
+            if(currentLogo) {
+                currentLogo.remove();
+                currentLogo = null;
+            }
+        }
+        
+        // cetak struk
+        function printReceipt() {
+            const content = document.getElementById("receipt").innerHTML;
+            const paperSize = document.getElementById("paperSize").value;
+            
+            const printWindow = window.open('', '', 'width=400,height=600');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>Struk SPBU</title>
+                        <style>
+                            @page { 
+                                size: ${paperSize}mm auto; 
+                                margin: 2mm;
+                            }
+                            body { 
+                                font-family: 'Courier New', monospace; 
+                                font-size: 14px; 
+                                margin: 0; 
+                                padding: 0;
+                                width: ${paperSize}mm;
+                                -webkit-print-color-adjust: exact;
+                                print-color-adjust: exact;
+                            }
+                            .dashed-line {
+                                border: none;
+                                border-top: 1px dashed #000;
+                                margin: 5px 0;
+                                height: 1px;
+                                width: 100%;
+                            }
+                            img {
+                                max-width: 100%;
+                                height: auto;
+                                margin-bottom: 5px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${content}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() {
+                                    window.print();
+                                    window.close();
+                                }, 200);
+                            };
+                        <\/script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        // Inisialisasi
+        window.onload = function() {
+            updateCurrentDate();
+            document.getElementById("receipt").focus();
+        };
+    </script>
+</body>
+</html>
