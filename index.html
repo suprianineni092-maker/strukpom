@@ -169,11 +169,6 @@ TERIMA KASIH
         // tombol align text
         function setTextAlign(pos) {
             document.execCommand("justify" + pos.charAt(0).toUpperCase() + pos.slice(1));
-            
-            // Update active button state
-            document.querySelectorAll('#toolbar button').forEach(btn => {
-                btn.classList.remove('active');
-            });
             event.target.classList.add('active');
         }
         
@@ -232,59 +227,60 @@ TERIMA KASIH
             }
         }
         
-        // cetak struk
+        // CETAK STRUK (pakai iframe, lebih aman di HP)
         function printReceipt() {
             const content = document.getElementById("receipt").innerHTML;
             const paperSize = document.getElementById("paperSize").value;
-            
-            const printWindow = window.open('', '', 'width=400,height=600');
-            printWindow.document.write(`
+
+            const printFrame = document.createElement("iframe");
+            printFrame.style.position = "absolute";
+            printFrame.style.width = "0";
+            printFrame.style.height = "0";
+            printFrame.style.border = "none";
+            document.body.appendChild(printFrame);
+
+            const doc = printFrame.contentWindow.document;
+            doc.open();
+            doc.write(`
                 <!DOCTYPE html>
                 <html>
-                    <head>
-                        <title>Struk SPBU</title>
-                        <style>
-                            @page { 
-                                size: ${paperSize}mm auto; 
-                                margin: 2mm;
-                            }
-                            body { 
-                                font-family: 'Courier New', monospace; 
-                                font-size: 14px; 
-                                margin: 0; 
-                                padding: 0;
-                                width: ${paperSize}mm;
-                                -webkit-print-color-adjust: exact;
-                                print-color-adjust: exact;
-                            }
-                            .dashed-line {
-                                border: none;
-                                border-top: 1px dashed #000;
-                                margin: 5px 0;
-                                height: 1px;
-                                width: 100%;
-                            }
-                            img {
-                                max-width: 100%;
-                                height: auto;
-                                margin-bottom: 5px;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${content}
-                        <script>
-                            window.onload = function() {
-                                setTimeout(function() {
-                                    window.print();
-                                    window.close();
-                                }, 200);
-                            };
-                        <\/script>
-                    </body>
+                <head>
+                    <title>Struk SPBU</title>
+                    <style>
+                        @page { 
+                            size: ${paperSize}mm auto; 
+                            margin: 2mm;
+                        }
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 14px; 
+                            margin: 0; 
+                            padding: 0;
+                            width: ${paperSize}mm;
+                        }
+                        .dashed-line {
+                            border: none;
+                            border-top: 1px dashed #000;
+                            margin: 5px 0;
+                            height: 1px;
+                            width: 100%;
+                        }
+                        img {
+                            max-width: 100%;
+                            height: auto;
+                            margin-bottom: 5px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
                 </html>
             `);
-            printWindow.document.close();
+            doc.close();
+
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
         }
         
         // Inisialisasi
